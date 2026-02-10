@@ -55,6 +55,10 @@ jobs:
       - name: Validate bundle
         run: databricks bundle validate -t ${{ github.ref_name }}
 
+      # Verify Databricks authentication
+      - name: Verify Databricks auth
+        run: databricks current-user me
+
       # Deploy bundle to workspace based on branch
       - name: Deploy bundle
         run: |
