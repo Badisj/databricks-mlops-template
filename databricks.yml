@@ -107,7 +107,7 @@ resources:
               - "{{var.test_table}}"
               - --model_name
               - "{{var.model_name}}"
-          new_cluster:
-            spark_version: 14.3.x-scala2.12
-            node_type_id: i3.xlarge
-            num_workers: 1
+          # new_cluster:
+          #   spark_version: 14.3.x-scala2.12
+          #   node_type_id: i3.xlarge
+          #   num_workers: 1
