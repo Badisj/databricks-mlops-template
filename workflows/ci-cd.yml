@@ -1,0 +1,115 @@
+name: Databricks MLOps CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+      - staging
+      - main
+  pull_request:
+    branches:
+      - dev
+      - staging
+      - main
+  workflow_dispatch:
+    inputs:
+      input_table:
+        description: "Optional override input table"
+        required: false
+      model_name:
+        description: "Optional override model name"
+        required: false
+      deploy_strategy:
+        description: "Deployment strategy: first/shadow/canary/ab/bluegreen"
+        required: false
+        default: first
+      approve_prod:
+        description: "Manual approval to deploy to PROD"
+        required: false
+        default: "no"
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Install Databricks CLI
+      - uses: databricks/setup-cli@v0.221.0
+
+      # 3️⃣ Validate bundle
+      - name: Validate bundle
+        run: databricks bundle validate -t ${{ github.ref_name }}
+
+      # Deploy bundle to workspace based on branch
+      - name: Deploy bundle
+        run: databricks bundle deploy -t ${{ github.ref_name }}
+
+      # Run ML pipeline in DEV/STAGING
+      - name: Run pipeline
+        if: ${{ github.ref_name != 'main' }}
+        run: |
+          databricks jobs run-now \
+            --job-name demo-ml-pipeline \
+            --parameters '{
+              "input_table": "${{ github.event.inputs.input_table || '' }}",
+              "model_name": "${{ github.event.inputs.model_name || '' }}"
+            }'
+
+      # Manual approval gate for PROD
+      - name: Manual approval for PROD deployment
+        if: ${{ github.ref_name == 'main' }}
+        uses: hmarr/auto-approve-action@v2
+        with:
+          comment: "Approve deployment to PROD"
+        env:
+          APPROVE: ${{ github.event.inputs.approve_prod }}
+        continue-on-error: false
+
+      # Deployment strategy orchestration (shadow/canary/AB/bluegreen)
+      - name: Deploy model strategy
+        if: ${{ github.ref_name == 'main' && github.event.inputs.approve_prod == 'yes' }}
+        run: |
+          STRATEGY="${{ github.event.inputs.deploy_strategy }}"
+
+          echo "Deploying model using strategy: $STRATEGY"
+
+          case "$STRATEGY" in
+            first)
+              echo "Deploying model to first users / limited traffic"
+              databricks model deploy --name "${{ github.event.inputs.model_name }}" --strategy first
+              ;;
+            shadow)
+              echo "Deploying model as shadow"
+              databricks model deploy --name "${{ github.event.inputs.model_name }}" --strategy shadow
+              ;;
+            canary)
+              echo "Deploying model as canary (partial traffic)"
+              databricks model deploy --name "${{ github.event.inputs.model_name }}" --strategy canary --traffic 10
+              ;;
+            ab)
+              echo "Deploying model as AB test (split traffic)"
+              databricks model deploy --name "${{ github.event.inputs.model_name }}" --strategy ab --traffic 50
+              ;;
+            bluegreen)
+              echo "Deploying model fully (Blue-Green)"
+              databricks model deploy --name "${{ github.event.inputs.model_name }}" --strategy bluegreen
+              ;;
+            *)
+              echo "Unknown strategy: $STRATEGY"
+              exit 1
+              ;;
+          esac
+
+      # 8️⃣ Optional MLflow stage promotion
+      - name: Optional MLflow stage transition
+        if: ${{ github.ref_name == 'main' && github.event.inputs.approve_prod == 'yes' }}
+        run: |
+          echo "Optional MLflow stage promotion (manual gate after evaluation)"
+          # Uncomment below to enable automatic promotion
+          # python scripts/mlflow_stage_transition.py --model_name "${{ github.event.inputs.model_name }}" --stage Production
