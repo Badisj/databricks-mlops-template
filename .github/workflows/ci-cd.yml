@@ -16,6 +16,15 @@ on:
       input_table:
         description: "Optional override input table"
         required: false
+      train_table:
+        description: "Optional override train table"
+        required: false
+      val_table:
+        description: "Optional override val table"
+        required: false
+      test_table:
+        description: "Optional override test table"
+        required: false
       model_name:
         description: "Optional override model name"
         required: false
@@ -36,30 +45,51 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout
+      # Checkout
       - uses: actions/checkout@v4
 
-      # 2️⃣ Install Databricks CLI
+      # Install Databricks CLI
       - uses: databricks/setup-cli@v0.221.0
 
-      # 3️⃣ Validate bundle
+      # Validate bundle
       - name: Validate bundle
         run: databricks bundle validate -t ${{ github.ref_name }}
 
       # Deploy bundle to workspace based on branch
       - name: Deploy bundle
-        run: databricks bundle deploy -t ${{ github.ref_name }}
+        run: |
+            CMD="databricks bundle deploy -t ${{ github.ref_name }}"
+
+            # Override variables if workflow_dispatch inputs exist
+            if [[ "${{ github.event.inputs.input_table }}" != "" ]]; then
+              CMD="$CMD --var input_table=${{ github.event.inputs.input_table }}"
+            fi
+            if [[ "${{ github.event.inputs.train_table }}" != "" ]]; then
+              CMD="$CMD --var train_table=${{ github.event.inputs.train_table }}"
+            fi
+            if [[ "${{ github.event.inputs.val_table }}" != "" ]]; then
+              CMD="$CMD --var val_table=${{ github.event.inputs.val_table }}"
+            fi
+            if [[ "${{ github.event.inputs.test_table }}" != "" ]]; then
+              CMD="$CMD --var test_table=${{ github.event.inputs.test_table }}"
+            fi
+            if [[ "${{ github.event.inputs.model_name }}" != "" ]]; then
+              CMD="$CMD --var model_name=${{ github.event.inputs.model_name }}"
+            fi
+
+            echo "Running: $CMD"
+            $CMD
+
+      # Install Python dependencies
+      - name: Install Python dependencies
+        run: pip install -e .
 
       # Run ML pipeline in DEV/STAGING
       - name: Run pipeline
         if: ${{ github.ref_name != 'main' }}
         run: |
           databricks jobs run-now \
-            --job-name demo-ml-pipeline \
-            --parameters '{
-              "input_table": "${{ github.event.inputs.input_table || '' }}",
-              "model_name": "${{ github.event.inputs.model_name || '' }}"
-            }'
+            --job-name ml-pipeline-template
 
       # Manual approval gate for PROD
       - name: Manual approval for PROD deployment
@@ -71,7 +101,7 @@ jobs:
           APPROVE: ${{ github.event.inputs.approve_prod }}
         continue-on-error: false
 
-      # Deployment strategy orchestration (shadow/canary/AB/bluegreen)
+      # Deployment strategy orchestration (first/shadow/canary/AB/bluegreen)
       - name: Deploy model strategy
         if: ${{ github.ref_name == 'main' && github.event.inputs.approve_prod == 'yes' }}
         run: |
@@ -106,7 +136,7 @@ jobs:
               ;;
           esac
 
-      # 8️⃣ Optional MLflow stage promotion
+      # Optional MLflow stage promotion
       - name: Optional MLflow stage transition
         if: ${{ github.ref_name == 'main' && github.event.inputs.approve_prod == 'yes' }}
         run: |

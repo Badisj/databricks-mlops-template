@@ -42,7 +42,7 @@ targets:
 resources:
   jobs:
     ml_pipeline:
-      name: demo-ml-pipeline 
+      name: ml-pipeline-template 
       tasks:
         - task_key: process
           spark_python_task:
