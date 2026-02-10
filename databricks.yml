@@ -1,0 +1,104 @@
+bundle:
+  name: mlops-starter
+
+variables:
+  catalog:
+    description: Unity Catalog
+    default: main
+  schema:
+    description: Schema
+    default: default
+  input_table:
+    default: rawfeatures
+  train_table:
+    default: train_features
+  val_table:
+    default: val_features
+  test_table:
+    default: val_features
+  model_name:
+    default: "main.${var.schema}.model"
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://<DEV_WORKSPACE_URL>
+    variables:
+      schema: dev_schema
+
+  staging:
+    workspace:
+      host: https://<STAGING_WORKSPACE_URL>
+    variables:
+      schema: staging_schema
+
+  prod:
+    workspace:
+      host: https://<PROD_WORKSPACE_URL>
+    variables:
+      schema: prod_schema
+
+resources:
+  jobs:
+    ml_pipeline:
+      name: demo-ml-pipeline 
+      tasks:
+        - task_key: process
+          spark_python_task:
+            python_file: src/process.py
+            parameters:
+              - --catalog
+              - "{{var.catalog}}"
+              - --schema
+              - "{{var.schema}}"
+              - --input_table
+              - "{{var.input_table}}"
+              - --train_table
+              - "{{var.train_table}}"
+              - --val_table
+              - "{{var.val_table}}"
+              - --test_table
+              - "{{var.test_table}}"
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+        - task_key: train
+          depends_on:
+            - task_key: process
+          spark_python_task:
+            python_file: src/train.py
+            parameters:
+              - --catalog
+              - "{{var.catalog}}"
+              - --schema
+              - "{{var.schema}}"
+              - --train_table
+              - "{{var.train_table}}"
+              - --val_table
+              - "{{var.val_table}}"
+              - --model_name
+              - "{{var.model_name}}"
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+        - task_key: evaluate
+          depends_on:
+            - task_key: train
+          spark_python_task:
+            python_file: src/evaluate.py
+            parameters:
+              - --catalog
+              - "{{var.catalog}}"
+              - --schema
+              - "{{var.schema}}"
+              - --test_table
+              - "{{var.test_table}}"
+              - --model_name
+              - "{{var.model_name}}"
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
