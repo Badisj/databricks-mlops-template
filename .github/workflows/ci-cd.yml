@@ -86,7 +86,14 @@ jobs:
 
       # Run ML pipeline in DEV/STAGING
       - name: Run pipeline
-        if: ${{ github.ref_name != 'main' }}
+        if: ${{ github.ref_name == 'dev' }}
+        run: |
+          databricks jobs run-now \
+            --job-name ml-pipeline-template
+
+      # Run ML pipeline in STAGING
+      - name: Run pipeline
+        if: ${{ github.ref_name == 'staging' }}
         run: |
           databricks jobs run-now \
             --job-name ml-pipeline-template

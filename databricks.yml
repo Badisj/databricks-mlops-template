@@ -4,18 +4,18 @@ bundle:
 variables:
   catalog:
     description: Unity Catalog
-    default: main
+    default: mlops
   schema:
     description: Schema
-    default: default
+    default: customer-churn-prediction
   input_table:
-    default: rawfeatures
+    default: ecommerce_customer_churn_dataset
   train_table:
-    default: train_features
+    default: ecommerce_customer_churn_train
   val_table:
-    default: val_features
+    default: ecommerce_customer_churn_val
   test_table:
-    default: val_features
+    default: ecommerce_customer_churn_test
   model_name:
     default: "main.${var.schema}.model"
 
@@ -23,19 +23,19 @@ targets:
   dev:
     default: true
     workspace:
-      host: https://<DEV_WORKSPACE_URL>
+      host: https://dbc-5cf8149b-20d2.cloud.databricks.com
     variables:
       schema: dev_schema
 
   staging:
     workspace:
-      host: https://<STAGING_WORKSPACE_URL>
+      host: https://dbc-5cf8149b-20d2.cloud.databricks.com
     variables:
       schema: staging_schema
 
   prod:
     workspace:
-      host: https://<PROD_WORKSPACE_URL>
+      host: https://dbc-5cf8149b-20d2.cloud.databricks.com
     variables:
       schema: prod_schema
 
