@@ -86,45 +86,48 @@ jobs:
       # Deploy bundle to workspace based on branch
       - name: Deploy bundle
         run: |
-            CMD="databricks bundle deploy -t ${{ github.ref_name }}"
+          CMD="databricks bundle deploy -t ${{ github.ref_name }}"
 
-            # Override variables if workflow_dispatch inputs exist
-            if [[ "${{ github.event.inputs.input_table }}" != "" ]]; then
-              CMD="$CMD --var input_table=${{ github.event.inputs.input_table }}"
-            fi
-            if [[ "${{ github.event.inputs.train_table }}" != "" ]]; then
-              CMD="$CMD --var train_table=${{ github.event.inputs.train_table }}"
-            fi
-            if [[ "${{ github.event.inputs.val_table }}" != "" ]]; then
-              CMD="$CMD --var val_table=${{ github.event.inputs.val_table }}"
-            fi
-            if [[ "${{ github.event.inputs.test_table }}" != "" ]]; then
-              CMD="$CMD --var test_table=${{ github.event.inputs.test_table }}"
-            fi
-            if [[ "${{ github.event.inputs.model_name }}" != "" ]]; then
-              CMD="$CMD --var model_name=${{ github.event.inputs.model_name }}"
-            fi
+          # Override variables if workflow_dispatch inputs exist
+          if [[ "${{ github.event.inputs.input_table }}" != "" ]]; then
+            CMD="$CMD --var input_table=${{ github.event.inputs.input_table }}"
+          fi
+          if [[ "${{ github.event.inputs.train_table }}" != "" ]]; then
+            CMD="$CMD --var train_table=${{ github.event.inputs.train_table }}"
+          fi
+          if [[ "${{ github.event.inputs.val_table }}" != "" ]]; then
+            CMD="$CMD --var val_table=${{ github.event.inputs.val_table }}"
+          fi
+          if [[ "${{ github.event.inputs.test_table }}" != "" ]]; then
+            CMD="$CMD --var test_table=${{ github.event.inputs.test_table }}"
+          fi
+          if [[ "${{ github.event.inputs.model_name }}" != "" ]]; then
+            CMD="$CMD --var model_name=${{ github.event.inputs.model_name }}"
+          fi
 
-            echo "Running: $CMD"
-            $CMD
+          echo "Running: $CMD"
+          $CMD
 
       # Install Python dependencies
       - name: Install Python dependencies
         run: pip install -e .
 
       # Run ML pipeline in DEV/STAGING
-      - name: Run pipeline
-        if: ${{ github.ref_name == 'dev' }}
+      - name: Run ML pipeline dynamically
         run: |
-          databricks jobs run-now \
-            --job-name ml-pipeline-template
+          JOB_NAME="ml-pipeline-template-${{ github.ref_name }}"
+          echo "Looking for job: $JOB_NAME"
 
-      # Run ML pipeline in STAGING
-      - name: Run pipeline
-        if: ${{ github.ref_name == 'staging' }}
-        run: |
-          databricks jobs run-now \
-            --job-name ml-pipeline-template
+          JOB_ID=$(databricks jobs list --json | jq -r --arg name "$JOB_NAME" '.[] | select(.name==$name) | .job_id')
+
+          if [[ -z "$JOB_ID" ]]; then
+              echo "Error: Job '$JOB_NAME' not found!"
+              exit 1
+          fi
+
+          echo "Resolved Job ID: $JOB_ID"
+          RUN_ID=$(databricks jobs run-now $JOB_ID --json | jq -r '.run_id')
+          echo "Triggered run ID: $RUN_ID"
 
       # Manual approval gate for PROD
       - name: Manual approval for PROD deployment
