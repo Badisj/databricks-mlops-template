@@ -39,19 +39,15 @@ targets:
     variables:
       schema: prod_schema
 
+
+
 resources:
   jobs:
     ml_pipeline:
       name: ml-pipeline-template
-      job_clusters:
-        - job_cluster_key: serverless
-          new_cluster:
-            spark_version: 14.3.x-scala2.12
-            data_security_mode: SINGLE_USER
-            runtime_engine: PHOTON
+
       tasks:
         - task_key: process
-          job_cluster_key: serverless
           spark_python_task:
             python_file: src/process.py
             parameters:
@@ -67,12 +63,9 @@ resources:
               - "{{var.val_table}}"
               - --test_table
               - "{{var.test_table}}"
-          # new_cluster:
-          #   spark_version: 14.3.x-scala2.12
-          #   node_type_id: i3.xlarge
-          #   num_workers: 1
+          environment_key: default
+
         - task_key: train
-          job_cluster_key: serverless
           depends_on:
             - task_key: process
           spark_python_task:
@@ -88,12 +81,9 @@ resources:
               - "{{var.val_table}}"
               - --model_name
               - "{{var.model_name}}"
-          # new_cluster:
-          #   spark_version: 14.3.x-scala2.12
-          #   node_type_id: i3.xlarge
-          #   num_workers: 1
+          environment_key: default
+
         - task_key: evaluate
-          job_cluster_key: serverless
           depends_on:
             - task_key: train
           spark_python_task:
@@ -107,7 +97,83 @@ resources:
               - "{{var.test_table}}"
               - --model_name
               - "{{var.model_name}}"
-          # new_cluster:
-          #   spark_version: 14.3.x-scala2.12
-          #   node_type_id: i3.xlarge
-          #   num_workers: 1
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+
+# resources:
+#   jobs:
+#     ml_pipeline:
+#       name: ml-pipeline-template
+#       job_clusters:
+#         - job_cluster_key: serverless
+#           new_cluster:
+#             spark_version: 14.3.x-scala2.12
+#             data_security_mode: SINGLE_USER
+#             runtime_engine: PHOTON
+#       tasks:
+#         - task_key: process
+#           job_cluster_key: serverless
+#           spark_python_task:
+#             python_file: src/process.py
+#             parameters:
+#               - --catalog
+#               - "{{var.catalog}}"
+#               - --schema
+#               - "{{var.schema}}"
+#               - --input_table
+#               - "{{var.input_table}}"
+#               - --train_table
+#               - "{{var.train_table}}"
+#               - --val_table
+#               - "{{var.val_table}}"
+#               - --test_table
+#               - "{{var.test_table}}"
+#           # new_cluster:
+#           #   spark_version: 14.3.x-scala2.12
+#           #   node_type_id: i3.xlarge
+#           #   num_workers: 1
+#         - task_key: train
+#           job_cluster_key: serverless
+#           depends_on:
+#             - task_key: process
+#           spark_python_task:
+#             python_file: src/train.py
+#             parameters:
+#               - --catalog
+#               - "{{var.catalog}}"
+#               - --schema
+#               - "{{var.schema}}"
+#               - --train_table
+#               - "{{var.train_table}}"
+#               - --val_table
+#               - "{{var.val_table}}"
+#               - --model_name
+#               - "{{var.model_name}}"
+#           # new_cluster:
+#           #   spark_version: 14.3.x-scala2.12
+#           #   node_type_id: i3.xlarge
+#           #   num_workers: 1
+#         - task_key: evaluate
+#           job_cluster_key: serverless
+#           depends_on:
+#             - task_key: train
+#           spark_python_task:
+#             python_file: src/evaluate.py
+#             parameters:
+#               - --catalog
+#               - "{{var.catalog}}"
+#               - --schema
+#               - "{{var.schema}}"
+#               - --test_table
+#               - "{{var.test_table}}"
+#               - --model_name
+#               - "{{var.model_name}}"
+#           # new_cluster:
+#           #   spark_version: 14.3.x-scala2.12
+#           #   node_type_id: i3.xlarge
+#           #   num_workers: 1
