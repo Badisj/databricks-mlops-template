@@ -124,9 +124,20 @@ jobs:
               exit 1
           fi 
 
-          echo "Resolved Job ID: $JOB_ID"
-          RUN_ID=$(databricks jobs run-now $JOB_ID --json | jq -r '.run_id')
-          echo "Triggered run ID: $RUN_ID"
+          
+          echo "Triggering job..."
+
+          RUN_OUTPUT=$(databricks jobs run-now $JOB_ID -o json)
+          echo "$RUN_OUTPUT"
+
+          RUN_ID=$(echo "$RUN_OUTPUT" | jq -r '.run_id')
+          echo "Run ID: $RUN_ID"
+
+          echo "Waiting for completion..."
+          databricks runs wait $RUN_ID
+
+          echo "Fetching run details..."
+          databricks runs get $RUN_ID -o json
 
       # Manual approval gate for PROD
       - name: Manual approval for PROD deployment
