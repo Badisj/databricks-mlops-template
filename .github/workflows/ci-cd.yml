@@ -115,10 +115,9 @@ jobs:
       # Run ML pipeline in DEV/STAGING
       - name: Run ML pipeline dynamically
         run: |
-          JOB_NAME="ml-pipeline-template-${{ github.ref_name }}"
+          JOB_NAME="ml-pipeline-template-dev"
           echo "Looking for job: $JOB_NAME"
-
-          JOB_ID=$(databricks jobs list --json | jq -r --arg name "$JOB_NAME" '.[] | select(.name==$name) | .job_id')
+          JOB_ID=$(databricks jobs list -o json | jq -r --arg name "$JOB_NAME" '.[] | select(.name==$name) | .job_id')
 
           if [[ -z "$JOB_ID" ]]; then
               echo "Error: Job '$JOB_NAME' not found!"
