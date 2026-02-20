@@ -89,4 +89,7 @@ if __name__ == "__main__":
     # ===================
 
     args = parser.parse_args()
+    print(args.train_table)
+    print(args.input_table)
+    
     process(args)
