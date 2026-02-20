@@ -57,14 +57,17 @@ def process(args):
     val_df = df.filter("split_rand >= 0.7 AND split_rand < 0.85").drop("split_rand")
     test_df = df.filter("split_rand >= 0.85").drop("split_rand")
 
+    # Ensure schema exists
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {args.catalog}.{args.schema}")
+
     logger.info(f"Writing train table: {train_table}")
-    train_df.write.mode("overwrite").saveAsTable(train_table)
+    train_df.write.format("delta").mode("overwrite").saveAsTable(train_table)
 
     logger.info(f"Writing validation table: {val_table}")
-    val_df.write.mode("overwrite").saveAsTable(val_table)
+    val_df.write.format("delta").mode("overwrite").saveAsTable(val_table)
 
     logger.info(f"Writing test table: {test_table}")
-    test_df.write.mode("overwrite").saveAsTable(test_table)
+    test_df.write.format("delta").mode("overwrite").saveAsTable(test_table)
 
     logger.info("Data processing completed successfully")
 
