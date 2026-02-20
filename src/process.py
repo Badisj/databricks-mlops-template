@@ -3,6 +3,7 @@ from pyspark.sql.functions import rand
 import argparse
 import logging
 
+
 # -------------------
 # Configure logging
 # -------------------
@@ -11,6 +12,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
 logger = logging.getLogger("process")
+
 
 # -------------------
 # Process function
@@ -57,9 +59,6 @@ def process(args):
     val_df = df.filter("split_rand >= 0.7 AND split_rand < 0.85").drop("split_rand")
     test_df = df.filter("split_rand >= 0.85").drop("split_rand")
 
-    # Ensure schema exists
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {args.catalog}.{args.schema}")
-
     logger.info(f"Writing train table: {train_table}")
     train_df.write.format("delta").mode("overwrite").saveAsTable(train_table)
 
@@ -70,6 +69,7 @@ def process(args):
     test_df.write.format("delta").mode("overwrite").saveAsTable(test_table)
 
     logger.info("Data processing completed successfully")
+
 
 # -------------------
 # Script Entry Point

@@ -2,6 +2,7 @@ import argparse
 import logging
 from mlflow.deployments import get_deploy_client
 
+
 # -------------------
 # Configure logging
 # -------------------

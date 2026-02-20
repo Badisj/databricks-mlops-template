@@ -5,6 +5,7 @@ from sklearn.linear_model import LinearRegression
 import argparse
 import logging
 
+
 # -------------------
 # Configure logging
 # -------------------
@@ -13,6 +14,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
 logger = logging.getLogger("train")
+
 
 # -------------------
 # Train function
@@ -76,6 +78,7 @@ def train(args):
         mlflow.register_model(f"runs:/{run.info.run_id}/model", args.model_name)
 
     logger.info("Model training and registration completed successfully")
+
 
 # -------------------
 # Script Entry Point
