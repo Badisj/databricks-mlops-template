@@ -117,7 +117,7 @@ jobs:
         run: |
           JOB_NAME="ml-pipeline-template-dev"
           echo "Looking for job: $JOB_NAME"
-          JOB_ID=$(databricks jobs list -o json | jq -r --arg name "$JOB_NAME" '.[] | select(.name==$name) | .job_id')
+          JOB_ID=$(databricks jobs list -o json | jq -r --arg name "$JOB_NAME" '.[] | select(.settings.name==$name) | .job_id')
 
           if [[ -z "$JOB_ID" ]]; then
               echo "Error: Job '$JOB_NAME' not found!"
