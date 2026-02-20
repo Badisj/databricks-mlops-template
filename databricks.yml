@@ -44,7 +44,7 @@ targets:
 resources:
   jobs:
     ml_pipeline:
-      name: "ml-pipeline-template-${target.name}"
+      name: "ml-pipeline-template-${bundle.target}"
 
       tasks:
         - task_key: process
