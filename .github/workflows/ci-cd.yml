@@ -54,23 +54,23 @@ jobs:
         with:
           python-version: "3.10"
 
-      # Upgrade pip and build tools
-      - name: Upgrade pip, setuptools, wheel, build
-        run: python -m pip install --upgrade pip setuptools wheel build
+      # # Upgrade pip and build tools
+      # - name: Upgrade pip, setuptools, wheel, build
+      #   run: python -m pip install --upgrade pip setuptools wheel build
 
-      # Debug: list repo root to confirm pyproject.toml
-      - name: List repo root
-        run: ls -l ${{ github.workspace }}
+      # # Debug: list repo root to confirm pyproject.toml
+      # - name: List repo root
+      #   run: ls -l ${{ github.workspace }}
 
-      # Build wheel from pyproject.toml
-      - name: Build Python package
-        working-directory: ${{ github.workspace }}
-        run: python -m build --wheel
+      # # Build wheel from pyproject.toml
+      # - name: Build Python package
+      #   working-directory: ${{ github.workspace }}
+      #   run: python -m build --wheel
 
-      # Install package editable from wheel
-      - name: Install editable package
-        working-directory: ${{ github.workspace }}
-        run: pip install -e dist/*.whl
+      # # Install package editable from wheel
+      # - name: Install editable package
+      #   working-directory: ${{ github.workspace }}
+      #   run: pip install -e dist/*.whl
 
       # Install Databricks CLI
       - uses: databricks/setup-cli@v0.221.0
@@ -109,8 +109,8 @@ jobs:
             $CMD
 
       # Install Python dependencies
-      # - name: Install Python dependencies
-      #   run: pip install -e .
+      - name: Install Python dependencies
+        run: pip install -e .
 
       # Run ML pipeline in DEV/STAGING
       - name: Run pipeline
